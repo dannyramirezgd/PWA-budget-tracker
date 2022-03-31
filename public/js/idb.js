@@ -2,21 +2,21 @@ let db;
 
 const request = indexedDB.open('budget', 1);
 
-request.onupgradeneeded = ({ target }) => {
-    let db = target.result;
+request.onupgradeneeded = function(event) {
+    const db = event.target.result;
     db.createObjectStore('new_transaction', { autoIncrement: true });
 };
 
-request.onsuccess = ({ target }) => {
-    db = target.result;
+request.onsuccess = function(event) {
+    db = event.target.result;
 
     if (navigator.onLine) {
-        checkDatabase();
+        uploadTransaction();
     }
 };
 
 request.onerror = function(event) {
-    console.log('Error!' + event.target.errorCode)
+    console.log(event.target.errorCode)
 };
 
 
@@ -27,7 +27,7 @@ function saveRecord(record) {
     store.add(record);
 }
 
-function checkDatabase() {
+function uploadTransaction() {
     const transaction = db.transaction(['new_transaction'], 'readwrite');
     const store = transaction.objectStore('new_transaction');
     const getAll = store.getAll();
@@ -43,7 +43,7 @@ function checkDatabase() {
                 }
             })
             .then(response => {
-                return response.json();
+                response.json();
             })
             .then(() => {
                 const transaction = db.transaction(['new_transaction'], 'readwrite');
@@ -59,4 +59,4 @@ function checkDatabase() {
     };
 }
 
-window.addEventListener('online', checkDatabase);
+window.addEventListener('online', uploadTransaction);
