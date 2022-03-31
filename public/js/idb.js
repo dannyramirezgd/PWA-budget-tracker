@@ -1,48 +1,62 @@
-const APP_PREFIX = 'BudgetTracker-';
-const VERSION = 'version_01';
-const CACHE_NAME = APP_PREFIX + VERSION;
-const FILES_TO_CACHE = [
-    './index.html',
-    './manifest.json',
-    './css/styles.css',
-    './icons/icon-72x72.png',
-    './icons/icon-96x96.png',
-    './icons/icon-128x128.png',
-    './icons/icon-144x144.png',
-    './icons/icon-152x152.png',
-    './icons/icon-192x192.png',
-    './icons/icon-384x384.png',
-    './icons/icon-512x512.png',
-    './js/idb.js',
-    './js/index.js'
-];
+let db;
 
-self.addEventListener('install', function(e) {
-    e.waitUntil(
-        caches.open(CACHE_NAME).then(function(cache) {
-            console.log('installing cache: ' + CACHE_NAME)
-            return cache.addAll(FILES_TO_CACHE);
-        })
-    )
-})
+const request = indexedDB.open('budget', 1);
 
-self.addEventListener('fetch', function(e) {
-    if (e.request.url.includes('/api/')) {
-        e.respondWith(
-            caches.open(DATA_CACHE_NAME).then(cache => {
-                return fetch(e.request)
-                .then(response => {
-                    if (response.ok) {
-                        cache.put(e.request.url, reponse.clone());
-                    }
+request.onupgradeneeded = ({ target }) => {
+    let db = target.result;
+    db.createObjectStore('new_transaction', { autoIncrement: true });
+};
 
-                    return response;
-                })
-                .catch(err => {
-                    console.log(err)
-                })
-            })
-        )
+request.onsuccess = ({ target }) => {
+    db = target.result;
+
+    if (navigator.onLine) {
+        checkDatabase();
     }
-})
+};
 
+request.onerror = function(event) {
+    console.log('Error!' + event.target.errorCode)
+};
+
+
+function saveRecord(record) {
+    const transaction = db.transaction(['new_transaction'], 'readwrite');
+    const store = transaction.objectStore('new_transaction');
+
+    store.add(record);
+}
+
+function checkDatabase() {
+    const transaction = db.transaction(['new_transaction'], 'readwrite');
+    const store = transaction.objectStore('new_transaction');
+    const getAll = store.getAll();
+
+    getAll.onsuccess = function (){
+        if (getAll.result.length > 0) {
+            fetch('/api/transaction/bulk', {
+                method: 'POST',
+                body: JSON.stringify(getAll.result),
+                headers: {
+                    Accept: 'application/json, text/plain, */*',
+                    'Content-Type': 'application/json' 
+                }
+            })
+            .then(response => {
+                return response.json();
+            })
+            .then(() => {
+                const transaction = db.transaction(['new_transaction'], 'readwrite');
+                const store = transaction.objectStore('new_transaction');
+                store.clear();
+
+                alert('all offline transactions have been submitted')
+            })
+            .catch(err => {
+                console.log(err);
+            })
+        }
+    };
+}
+
+window.addEventListener('online', checkDatabase);
