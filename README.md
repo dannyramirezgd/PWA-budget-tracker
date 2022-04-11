@@ -12,6 +12,7 @@ A user can track his or her expenses through a simple application that also uses
   - [Built With](#built-with)
   - [Usage](#usage)
   - [Website](#website)
+  - [Screenshot](#screenshot)
   - [Contributing](#contributing)
   - [Questions](#questions)
   - [License](#license)
@@ -33,6 +34,9 @@ The user needs to be familiar with service workers, IndexedDB, MongoDB
 
 ## Website
 https://nameless-depths-49959.herokuapp.com/
+
+## Screenshot
+![screenshot](./public/screenshot.png)
 
 ## Contributing
 If you are looking to contribute you can for example: 
